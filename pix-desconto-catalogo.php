@@ -1,38 +1,40 @@
 <?php
-/**
- * Plugin Name: Pix Desconto no Catálogo (Payment Gateway Based Fees)
- * Description: Exibe o desconto PIX do plugin Payment Gateway Based Fees and Discounts no catálogo da loja.
- * Version: 1.0
- * Author: Marcelo Nascimento
- */
 
-if ( ! defined( 'ABSPATH' ) ) {
-    exit;
-}
-
-/**
- * Exibe info de desconto abaixo do preço no loop da loja
- */
 add_action( 'woocommerce_after_shop_loop_item_title', function() {
-
-    if ( ! function_exists( 'alg_wc_checkout_fees_get_product_info_html' ) ) {
+    // 1. Verifica se o plugin está ativo
+    if ( ! class_exists( 'Alg_WC_Checkout_Fees' ) ) {
         return;
     }
 
     global $product;
 
-    if ( ! $product instanceof WC_Product ) {
+    if ( ! $product ) {
         return;
     }
 
-    $html = alg_wc_checkout_fees_get_product_info_html( $product );
+    // 2. Tenta pegar o HTML formatado pelo plugin
+    $html = '';
+    if ( function_exists( 'alg_wc_checkout_fees_get_product_info_html' ) ) {
+        $html = alg_wc_checkout_fees_get_product_info_html( $product );
+    }
 
+    // 3. Se o HTML veio vazio, o plugin pode estar ignorando o loop. 
+    // Vamos forçar a exibição se houver uma regra de desconto global.
     if ( empty( $html ) ) {
-        return;
+        // Opcional: Aqui poderíamos calcular manualmente, 
+        // mas primeiro vamos garantir que o container apareça para teste.
+        $html = apply_filters( 'alg_wc_checkout_fees_product_info_html', '', $product );
     }
 
-    echo '<div class="alg-pix-desconto-catalogo">';
-    echo $html;
-    echo '</div>';
+    if ( ! empty( $html ) ) {
+        echo '<div class="alg-pix-desconto-catalogo" style="color: #27ae60; font-weight: bold; font-size: 0.9em; margin-top: 5px;">';
+        echo $html;
+        echo '</div>';
+    } else {
+        // Debug visual temporário: remova após testar
+        // echo '<small style="display:none;">Plugin carregado, mas sem regra para este item.</small>';
+    }
 
-}, 11 );
+}, 15 ); // Aumentamos a prioridade para 15 para garantir que fique abaixo do preço
+
+?>
